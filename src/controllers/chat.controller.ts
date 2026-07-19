@@ -1,14 +1,12 @@
 import { Request, Response } from "express";
 import ChatModel from "../models/chat.model";
+import DocumentModel from "../models/document.model";
 import { groq } from "../config/groq";
-
-const systemPrompt =
-  "You are a study assistant. Help the user by answering questions clearly and concisely.";
 
 export async function sendMessage(req: Request, res: Response) {
   try {
     const userId = (req as any).userId;
-    const { message, sessionId } = req.body;
+    const { message, sessionId, documentId } = req.body;
 
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -26,6 +24,20 @@ export async function sendMessage(req: Request, res: Response) {
         userId,
         messages: [],
       });
+    }
+
+    // Build dynamic system prompt
+    let systemPrompt =
+      "You are NoteSage, a friendly AI study tutor. Help the student understand their study material clearly and concisely. When explaining concepts, use simple language and examples.";
+
+    if (documentId) {
+      const doc = await DocumentModel.findOne({
+        _id: documentId,
+        status: "ready",
+      });
+      if (doc && doc.extractedText) {
+        systemPrompt += `\n\nThe student is asking about the following study material. Use it as your PRIMARY reference and always ground your answers in it:\n\n--- STUDY MATERIAL START ---\n${doc.extractedText.slice(0, 12000)}\n--- STUDY MATERIAL END ---\n\nIf asked something unrelated to this material, still answer helpfully but note it's outside the uploaded content.`;
+      }
     }
 
     const history = session.messages.map((m) => ({
@@ -72,14 +84,18 @@ export async function sendMessage(req: Request, res: Response) {
 
     await session.save();
 
-    res.write(`data: ${JSON.stringify({ done: true, sessionId: session._id })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ done: true, sessionId: session._id })}\n\n`
+    );
     res.end();
   } catch (error: any) {
     console.error("Chat controller error:", error);
     if (!res.headersSent) {
       return res.status(500).json({ error: error?.message || "Server error" });
     }
-    res.write(`data: ${JSON.stringify({ error: error?.message || "Server error" })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ error: error?.message || "Server error" })}\n\n`
+    );
     res.end();
   }
 }

@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
-  },
+ "scripts": {
+  "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+  "seed": "ts-node --transpile-only src/scripts/seed.ts"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
