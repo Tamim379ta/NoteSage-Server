@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
- "scripts": {
-  "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-  "seed": "ts-node --transpile-only src/scripts/seed.ts"
-},
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "seed": "ts-node --transpile-only src/scripts/seed.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -27,6 +27,7 @@
     "ts-node-dev": "^2.0.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "typescript": "^5.6.3"
   }
 }
