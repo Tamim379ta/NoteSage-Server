@@ -3,17 +3,18 @@ import { PdfReader } from "pdfreader";
 import DocumentModel from "../models/document.model";
 import { groq } from "../config/groq";
 
-// PDF text extraction
+// PDF text extraction (Fixed: handles multi-page PDFs properly)
 function extractTextFromPDF(buffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new PdfReader();
+    const reader = new PdfReader({});
     let text = "";
 
     reader.parseBuffer(buffer, (err: any, item: any) => {
       if (err) {
         reject(err);
       } else if (!item) {
-        resolve(text);
+        // End of file reached
+        resolve(text.trim());
       } else if (item.text) {
         text += item.text + " ";
       }
@@ -56,7 +57,9 @@ export async function uploadDocument(req: Request, res: Response) {
       (req.body.title as string) ||
       file.originalname.replace(/\.[^/.]+$/, "");
     const category = req.body.category || "General";
-    const isPublic = req.body.isPublic === "true" || true;
+    
+    // Fixed: Properly evaluates boolean instead of forcing true
+    const isPublic = req.body.isPublic !== "false";
 
     const doc = await DocumentModel.create({
       userId,
@@ -94,7 +97,9 @@ export async function uploadDocument(req: Request, res: Response) {
     }
   } catch (err: any) {
     console.error("Upload error:", err);
-    return res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 }
 
@@ -108,7 +113,7 @@ export async function getPublicDocuments(req: Request, res: Response) {
       $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
     };
 
-    if (search) {
+    if (search && typeof search === "string") {
       query.title = { $regex: search, $options: "i" };
     }
 
@@ -134,7 +139,7 @@ export async function getPublicDocument(req: Request, res: Response) {
   try {
     const { id } = req.params;
     const doc = await DocumentModel.findOne({
-      _id: id,
+      _id: id as string,
       status: "ready",
       isPublic: true,
     }).select("-extractedText");
@@ -198,7 +203,7 @@ export async function getDocument(req: Request, res: Response) {
     const userId = (req as any).userId;
     const { id } = req.params;
 
-    const doc = await DocumentModel.findOne({ _id: id, userId });
+    const doc = await DocumentModel.findOne({ _id: id as string, userId });
     if (!doc) return res.status(404).json({ error: "Document not found." });
 
     return res.json({ document: doc });
@@ -213,7 +218,7 @@ export async function deleteDocument(req: Request, res: Response) {
     const userId = (req as any).userId;
     const { id } = req.params;
 
-    await DocumentModel.findOneAndDelete({ _id: id, userId });
+    await DocumentModel.findOneAndDelete({ _id: id as string, userId });
     return res.json({ message: "Document deleted." });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });

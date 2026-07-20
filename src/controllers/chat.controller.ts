@@ -15,8 +15,9 @@ export async function sendMessage(req: Request, res: Response) {
       return res.status(400).json({ error: "Message is required." });
     }
 
+    // Cast sessionId to string to satisfy Mongoose's strict query types
     let session = sessionId
-      ? await ChatModel.findOne({ _id: sessionId, userId })
+      ? await ChatModel.findOne({ _id: sessionId as string, userId })
       : null;
 
     if (!session) {
@@ -32,7 +33,7 @@ export async function sendMessage(req: Request, res: Response) {
 
     if (documentId) {
       const doc = await DocumentModel.findOne({
-        _id: documentId,
+        _id: documentId as string,
         status: "ready",
       });
       if (doc && doc.extractedText) {
@@ -122,7 +123,7 @@ export async function getSession(req: Request, res: Response) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const session = await ChatModel.findOne({ _id: id, userId });
+    const session = await ChatModel.findOne({ _id: id as string, userId });
     if (!session) {
       return res.status(404).json({ error: "Session not found." });
     }
@@ -141,7 +142,7 @@ export async function deleteSession(req: Request, res: Response) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    await ChatModel.findOneAndDelete({ _id: id, userId });
+    await ChatModel.findOneAndDelete({ _id: id as string, userId });
     return res.json({ message: "Session deleted." });
   } catch (error: any) {
     return res.status(500).json({ error: error?.message || "Server error" });
