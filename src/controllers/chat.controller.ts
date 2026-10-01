@@ -47,7 +47,7 @@ export async function sendMessage(req: Request, res: Response) {
     }));
 
     const stream = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       max_tokens: 1000,
       stream: true,
       messages: [
